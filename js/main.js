@@ -81,8 +81,12 @@ const clickDelegation = (state) => {
 // playerTurn :: {state} => void
 const playerTurn = function (state) {
   const currentState = Object.assign({}, state);
-  const x = currentState.selection[0];
-  const y = currentState.selection[1];
+  // const x = currentState.selection[0];
+  // const y = currentState.selection[1];
+  // RANDOM MOVE TO TEST
+  const x = 0;
+  const y = 5;
+
   // console.log('playerTurn');
   // console.log(`(${coords.x},${coords.y})`)
   // console.log(state);
@@ -92,25 +96,37 @@ const playerTurn = function (state) {
   // drawBoard(gameboard, currentState);
   // gameboard.addEventListener('click', clickDelegation(currentState));
 
-  let nextState = 0;
+
+  let futureState = 0;
 
   // 5 is off-board
   if (y === 5) {
     // If you click your own pool
     if (x === currentState.turn) {
       // returns future[state]
-      nextState = moveToBoard(currentState);
+      futureState = moveToBoard(currentState);
     }
   }
 
-  // Update Promise resolve/fail
-  if (nextState === 0 ) {
+  futureState.then((nextState) => {
+    console.log('Valid Move');
+    drawBoard(gameboard, nextState);
+    gameboard.addEventListener('click', clickDelegation(nextState));
+  }).catch((reason) => {
+    console.log(reason);
+    drawBoard(gameboard, currentState);
     gameboard.addEventListener('click', clickDelegation(currentState));
-  }
-  // For testing. Will return data from move functions to pass to next event
-  // nextState = Object.assign({}, currentState);
-  drawBoard(gameboard, nextState);
-  gameboard.addEventListener('click', clickDelegation(nextState));
+  });
+
+
+  // // Update Promise resolve/fail
+  // if (nextState === 0 ) {
+  //   gameboard.addEventListener('click', clickDelegation(currentState));
+  // }
+  // // For testing. Will return data from move functions to pass to next event
+  // // nextState = Object.assign({}, currentState);
+  // drawBoard(gameboard, nextState);
+  // gameboard.addEventListener('click', clickDelegation(nextState));
 
 };
 
@@ -120,11 +136,23 @@ const moveToBoard = function (state) {
   const x = currentState.selection[0];
   const y = currentState.selection[1];
 
+  const futureState = new Promise((resolve, reject) => {
+    // Random update to test Promise
+    const nextState = Object.assign({}, currentState);
+    // for testing. will change to if Valid then resolve else reject
+    let isValid = true;
+    if (isValid) {
+      nextState.board[0][0] = eleDown;
+      setTimeout(resolve(nextState), 2000);
+    } else {
+      reject('Not valid move');
+    }
+  });
   // highlight outside squares
   // maybe add .valid class for next click event
 
   // make click event for outside squares
-
+  return futureState;
 };
 
 // highlightValid :: [board] => Int(action) => void
