@@ -11,28 +11,30 @@ const rhinoUp = 'gol2-up';
 const rhinoDown = 'gol2-down';
 const rhinoLeft = 'gol2-left';
 const rhinoRight = 'gol2-right'; 
+const ELEPHANT = 0;
+const RHINO = 1;
+const NOTHING = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded!');
+  // State of game
+  const state = {
+    board: [[empty, empty, empty, empty, empty],
+            [empty, empty, empty, empty, empty],
+            [empty, mountain, mountain, mountain, empty],
+            [empty, empty, empty, empty, empty],
+            [empty, empty, empty, empty, empty]],
+    elephantPool: 5,
+    rhinoPool: 5,
+    turn: ELEPHANT, // 0 -> elephant, 1 -> rhino
+    selected: NOTHING, // 0 -> nothing, [x,y] -> current selection
+  };
   drawBoard(gameboard, state);
-  
   gameboard.addEventListener('click', clickDelegation(state), false);
 });
 
-// State of game
-const state = {
-  board: [[empty, empty, empty, empty, empty],
-          [empty, empty, empty, empty, empty],
-          [empty, mountain, mountain, mountain, empty],
-          [empty, empty, empty, empty, empty],
-          [empty, empty, empty, empty, empty]],
-  elephantPool: 5,
-  rhinoPool: 5,
-  turn: 0, // 0 -> elephant, 1 -> rhino
-};
 
 const drawBoard = function (view, model) {
-  // y coords
   model.board.forEach((row, y) => {
     row.forEach((space, x) => {
       if (model.board[y][x] === empty) {
@@ -46,17 +48,17 @@ const drawBoard = function (view, model) {
 
 
 // When clicked
-
-const clickDelegation = (currentState) => {
+const clickDelegation = (state) => {
   const handle = (evt) => {
+    const currentState = Object.assign({}, state);
     console.log('clicked!')
     // console.log(currentState);
     // Bail if nothing valid is clicked
     if (!evt.target.matches('.clickable')) return;
     evt.preventDefault();
     let clickTarget = evt.target;
-    if (evt.target.tagName === 'IMG') {
-      clickTarget = evt.target.parentNode;  
+    if (clickTarget.tagName === 'IMG') {
+      clickTarget = clickTarget.parentNode;  
     }
     console.log(clickTarget);
     
@@ -68,25 +70,63 @@ const clickDelegation = (currentState) => {
       x: Number.parseInt(clickTarget.id[1]),
       y: Number.parseInt(clickTarget.id[2]),
     };
+    currentState.selection = [Number.parseInt(clickTarget.id[1]),
+                              Number.parseInt(clickTarget.id)[2]];
 
-    playerTurn(coords, currentState);
+    playerTurn(currentState);
   };
   return handle;
 };
 
-const playerTurn = function (coords, state) {
+// playerTurn :: {state} => void
+const playerTurn = function (state) {
+  const currentState = Object.assign({}, state);
+  const x = currentState.selection[0];
+  const y = currentState.selection[1];
   // console.log('playerTurn');
   // console.log(`(${coords.x},${coords.y})`)
   // console.log(state);
 
-
-  const currentState = Object.assign({}, state);
-  
   // For testing purposes only
-  currentState.board[coords.y][coords.x] = eleDown;
-  drawBoard(gameboard, currentState);
+  // currentState.board[coords.y][coords.x] = eleDown;
+  // drawBoard(gameboard, currentState);
+  // gameboard.addEventListener('click', clickDelegation(currentState));
 
-  gameboard.addEventListener('click', clickDelegation(currentState));
+  let nextState = 0;
+
+  // 5 is off-board
+  if (y === 5) {
+    // If you click your own pool
+    if (x === currentState.turn) {
+      // returns future[state]
+      nextState = moveToBoard(currentState);
+    }
+  }
+
+  // Update Promise resolve/fail
+  if (nextState === 0 ) {
+    gameboard.addEventListener('click', clickDelegation(currentState));
+  }
+  // For testing. Will return data from move functions to pass to next event
+  // nextState = Object.assign({}, currentState);
+  drawBoard(gameboard, nextState);
+  gameboard.addEventListener('click', clickDelegation(nextState));
+
 };
 
+// moveToBoard :: {state} => future[{state} | 0]
+const moveToBoard = function (state) {
+  const currentState = Object.assign({}, state);
+  const x = currentState.selection[0];
+  const y = currentState.selection[1];
 
+  // highlight outside squares
+  // maybe add .valid class for next click event
+
+  // make click event for outside squares
+
+};
+
+// highlightValid :: [board] => Int(action) => void
+
+// clearHighlight :: () => void 
