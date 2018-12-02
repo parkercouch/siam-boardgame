@@ -3,14 +3,14 @@ const gameboard = document.getElementById('gameboard');
 const empty = 0;
 // Temp names
 const mountain = 'stone';
-const eleUp = 'gol-up';
-const eleDown = 'gol-down';
-const eleLeft = 'gol-left';
-const eleRight = 'gol-right';
-const rhinoUp = 'gol2-up';
-const rhinoDown = 'gol2-down';
-const rhinoLeft = 'gol2-left';
-const rhinoRight = 'gol2-right'; 
+const eleUp = 'gol0-up';
+const eleDown = 'gol0-down';
+const eleLeft = 'gol0-left';
+const eleRight = 'gol0-right';
+const rhinoUp = 'gol1-up';
+const rhinoDown = 'gol1-down';
+const rhinoLeft = 'gol1-left';
+const rhinoRight = 'gol1-right'; 
 const ELEPHANT = 0;
 const RHINO = 1;
 const NOTHING = 0;
@@ -28,12 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
     rhinoPool: 5,
     turn: ELEPHANT, // 0 -> elephant, 1 -> rhino
     selected: NOTHING, // 0 -> nothing, [x,y] -> current selection
+    clicked: NOTHING, // 0 -> nothing, [x,y] -> clicked coords
   };
   drawBoard(gameboard, state);
   gameboard.addEventListener('click', clickDelegation(state), false);
 });
 
-
+// drawBoard :: (elem, state) => void
 const drawBoard = function (view, model) {
   model.board.forEach((row, y) => {
     row.forEach((space, x) => {
@@ -48,6 +49,7 @@ const drawBoard = function (view, model) {
 
 
 // When clicked
+// clickDelegation :: state => (evt) => void
 const clickDelegation = (state) => {
   const handle = (evt) => {
     const currentState = Object.assign({}, state);
@@ -66,19 +68,33 @@ const clickDelegation = (state) => {
     gameboard.removeEventListener('click', handle);
 
     // get x,y coords from element clicked
-    const coords = {
-      x: Number.parseInt(clickTarget.id[1]),
-      y: Number.parseInt(clickTarget.id[2]),
-    };
-    currentState.selection = [Number.parseInt(clickTarget.id[1]),
-                              Number.parseInt(clickTarget.id)[2]];
+    const x = Number.parseInt(clickTarget.id[1]);
+    const y = Number.parseInt(clickTarget.id[2]);
 
-    playerTurn(currentState);
+    // If nothing selected
+    if (!currentState.selection) {
+      // check if current player's piece
+      if (isYourPiece(currentState.turn, currentState.board[y][x])) {
+        currentState.selection = [x, y];
+        highlight(clickTarget);
+        gameboard.addEventListener('click', clickDelegation(currentState));
+      } else {
+        gameboard.addEventListener('click', clickDelegation(state));
+      }
+    } else {
+      currentState.clicked = [x, y];
+      playerTurn(currentState);
+    }
   };
   return handle;
 };
 
-// playerTurn :: {state} => void
+// isYourPiece :: (Either[ELEPHANT | RHINO], Any) => Bool
+const isYourPiece = function (currentPlayer, piece) {
+  return (piece.toString().indexOf(currentPlayer) >= 0);
+};
+
+// playerTurn :: state => void
 const playerTurn = function (state) {
   const currentState = Object.assign({}, state);
   // const x = currentState.selection[0];
@@ -91,12 +107,6 @@ const playerTurn = function (state) {
   // console.log(`(${coords.x},${coords.y})`)
   // console.log(state);
 
-  // For testing purposes only
-  // currentState.board[coords.y][coords.x] = eleDown;
-  // drawBoard(gameboard, currentState);
-  // gameboard.addEventListener('click', clickDelegation(currentState));
-
-
   let futureState = 0;
 
   // 5 is off-board
@@ -108,6 +118,12 @@ const playerTurn = function (state) {
     }
   }
 
+  // switch(true) {
+  //   case (y >= 0)
+  // }
+
+
+
   futureState.then((nextState) => {
     console.log('Valid Move');
     drawBoard(gameboard, nextState);
@@ -117,20 +133,9 @@ const playerTurn = function (state) {
     drawBoard(gameboard, currentState);
     gameboard.addEventListener('click', clickDelegation(currentState));
   });
-
-
-  // // Update Promise resolve/fail
-  // if (nextState === 0 ) {
-  //   gameboard.addEventListener('click', clickDelegation(currentState));
-  // }
-  // // For testing. Will return data from move functions to pass to next event
-  // // nextState = Object.assign({}, currentState);
-  // drawBoard(gameboard, nextState);
-  // gameboard.addEventListener('click', clickDelegation(nextState));
-
 };
 
-// moveToBoard :: {state} => future[{state} | 0]
+// moveToBoard :: state => future[state]
 const moveToBoard = function (state) {
   const currentState = Object.assign({}, state);
   const x = currentState.selection[0];
@@ -153,6 +158,12 @@ const moveToBoard = function (state) {
 
   // make click event for outside squares
   return futureState;
+};
+
+
+// highlight :: elem => void
+const highlight = function (element) {
+  element.classList.add('highlight');
 };
 
 // highlightValid :: [board] => Int(action) => void
