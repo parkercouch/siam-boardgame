@@ -1,11 +1,29 @@
 body {
   text-align: center;
 }
+
+#gameboard {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  align-items: center;
+}
+
 .container {
   margin-top: 25px;
 }
+
 .square {
   width: 100px;
   height: 100px;
   background-color: lightgrey;
+  display: inline-block;
+  margin: 0px;
+  padding: 10px;
+  border: 1px solid black;
+}
+
+.square img {
+  width: 100%;
+  height: auto;
 }

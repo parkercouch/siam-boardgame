@@ -1,18 +1,20 @@
 /* eslint-disable */
 const gameboard = document.getElementById('gameboard');
 const empty = 0;
-const mountain = 9;
-const eleUp = 1;
-const eleDown = 2;
-const eleLeft = 3;
-const eleRight = 4;
-const rhinoUp = 5;
-const rhinoDown = 6;
-const rhinoLeft = 7;
-const rhinoRight = 8; 
+// Temp names
+const mountain = 'stone';
+const eleUp = 'gol-up';
+const eleDown = 'gol-down';
+const eleLeft = 'gol-left';
+const eleRight = 'gol-right';
+const rhinoUp = 'gol2-up';
+const rhinoDown = 'gol2-down';
+const rhinoLeft = 'gol2-left';
+const rhinoRight = 'gol2-right'; 
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded!');
+  drawBoard(gameboard, state);
   
   gameboard.addEventListener('click', clickDelegation(state), false);
 });
@@ -29,32 +31,62 @@ const state = {
   turn: 0, // 0 -> elephant, 1 -> rhino
 };
 
+const drawBoard = function (view, model) {
+  // y coords
+  model.board.forEach((row, y) => {
+    row.forEach((space, x) => {
+      if (model.board[y][x] === empty) {
+        view.querySelector(`#s${x}${y} img`).src = '';
+      } else {
+        view.querySelector(`#s${x}${y} img`).src = `img/${model.board[y][x]}.png`;
+      }
+    });
+  });
+}
 
 
 // When clicked
 
 const clickDelegation = (currentState) => {
-
-  return (evt) => {
-    console.log('in clickDelegation')
-    console.log(currentState);
+  const handle = (evt) => {
+    console.log('clicked!')
+    // console.log(currentState);
     // Bail if nothing valid is clicked
     if (!evt.target.matches('.clickable')) return;
     evt.preventDefault();
-    console.log(evt.target);
+    let clickTarget = evt.target;
+    if (evt.target.tagName === 'IMG') {
+      clickTarget = evt.target.parentNode;  
+    }
+    console.log(clickTarget);
+    
+    console.log('Clickable!!');
+    gameboard.removeEventListener('click', handle);
+
     // get x,y coords from element clicked
-    const x = Number.parseInt(evt.target.id[0]);
-    const y = Number.parseInt(evt.target.id[1]);
+    const coords = {
+      x: Number.parseInt(clickTarget.id[1]),
+      y: Number.parseInt(clickTarget.id[2]),
+    };
 
-
-    playerTurn(x, y, currentState);
+    playerTurn(coords, currentState);
   };
+  return handle;
 };
 
-const playerTurn = function (x, y, state) {
-  console.log('playerTurn');
-  console.log(`(${x},${y})`)
-  console.log(state);
+const playerTurn = function (coords, state) {
+  // console.log('playerTurn');
+  // console.log(`(${coords.x},${coords.y})`)
+  // console.log(state);
+
+
+  const currentState = Object.assign({}, state);
+  
+  // For testing purposes only
+  currentState.board[coords.y][coords.x] = eleDown;
+  drawBoard(gameboard, currentState);
+
+  gameboard.addEventListener('click', clickDelegation(currentState));
 };
 
 
