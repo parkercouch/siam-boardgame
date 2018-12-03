@@ -15,6 +15,12 @@ const ELEPHANT = 0;
 const RHINO = 1;
 const NOTHING = 0;
 const POOL = 'p';
+const ELE = 'gol0-';
+const RHI = 'gol1-';
+const UP = 'up';
+const DOWN = 'down';
+const LEFT = 'left';
+const RIGHT = 'right';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded!');
@@ -64,12 +70,22 @@ const clickDelegation = (state) => {
     const y = Number.parseInt(clickTarget.id[2]);
     console.log(`clicktarget: (${x},${y})`);
     // NEED to add check if pool has contents
-    const inPool = clickTarget.id[0] === POOL && x === currentState.turn;
+
+    // 1 -> rhino, 0 -> elephant
+    const currentPool = (currentState.turn) ? currentState.rhinoPool
+                                            : currentState.elephantPool;
+
+    // Player can click the pool if it is theirs and it has a piece
+    const inPool = clickTarget.id[0] === POOL
+                && x === currentState.turn
+                && currentPool > 0;
 
     // If nothing selected
     if (!currentState.selected) {
+
       // check if current player's piece or pool
-      if (inPool || isYourPiece(currentState.turn, currentState.board[y][x])) {
+      if (inPool ||
+          (y < 5 && isYourPiece(currentState.turn, currentState.board[y][x]))) {
         currentState.selected = [x, y];
         highlight(clickTarget);
         gameboard.addEventListener('click', clickDelegation(currentState));
@@ -77,9 +93,13 @@ const clickDelegation = (state) => {
         gameboard.addEventListener('click', clickDelegation(state));
       }
     } 
+    // If selected and targeted are both the Pool then try again!
+    else if (currentState.selected[1] === 5
+             && y === 5) {
+      gameboard.addEventListener('click', clickDelegation(state));
+    }
     // If already selected then do an action at targeted
     else {
-      // Check if targeted and selected are pool and reject UPDATE ME
       currentState.targeted = [x, y];
       playerTurn(currentState);
     }
@@ -103,14 +123,11 @@ const playerTurn = function (state) {
   console.log(currentState.board);
   console.log(currentState.board[0][0]);
 
-  let selectedPiece;
-
-  if (selectedCoords.y === 5) {
-    selectedPiece = POOL;
-  } else {
-    selectedPiece = currentState.board[selectedCoords.y][selectedCoords.x];
-  }
-  const targetLocation = currentState.board[targetedCoords.y][targetedCoords.x];
+  // set selected and targeted to Pool or square
+  const selectedPiece = (selectedCoords.y === 5) ?
+                        POOL : currentState.board[selectedCoords.y][selectedCoords.x];
+  const targetLocation = (targetedCoords.y === 5) ?
+                        POOL : currentState.board[targetedCoords.y][targetedCoords.x];
 
 
   let futureState = 0;
@@ -125,8 +142,7 @@ const playerTurn = function (state) {
     }
   } else {
     switch (true) {
-      // 5 is off board
-      case (targetedCoords.y === 5):
+      case (targetLocation === POOL):
         futureState = removeFromBoard(currentState);
         break;
       case (targetLocation === EMPTY):
@@ -165,12 +181,16 @@ const moveToBoard = function (state) {
   const currentState = Object.assign({}, state);
   const x = currentState.targeted[0];
   const y = currentState.targeted[1];
+  const currentPool = currentState.turn ? 'rhinoPool' : 'elephantPool';
 
   const futureState = new Promise((resolve, reject) => {
     //Do I need a nextState?? **UPDATE**
     const nextState = Object.assign({}, currentState);
     if (isOnBorder([x, y])) {
-      nextState.board[y][x] = eleDown;
+      // Place piece depending on player turn
+      const piece = moveToBoardPiece(nextState);
+      nextState.board[y][x] = piece;
+      nextState[currentPool] -= 1;
       drawBoard(gameboard, nextState);
       
       resolve(nextState);
@@ -180,6 +200,36 @@ const moveToBoard = function (state) {
   });
   return futureState;
 };
+
+// moveToBoardPiece :: state -> String 
+const moveToBoardPiece = function (state) {
+  // Select piece and direction when moving from pool to board
+  const x = state.targeted[0];
+  const y = state.targeted[1];
+  const player = state.turn;
+  let piece = player ? RHI : ELE;
+
+  switch (true) {
+    case (y == 0):
+      piece += DOWN;
+      break;
+    case (y == 4):
+      piece += UP;
+      break;
+    case (x == 0):
+      piece += RIGHT;
+      break;
+    case (x == 4):
+      piece += LEFT;
+      break;
+    default:
+      piece = 'ERROR';
+  }
+
+  return piece;
+};
+
+
 
 // pushFromSide :: state -> future[state]
 const pushFromSide = function (state) {
@@ -198,7 +248,7 @@ const movePiece = function (state) {
 
 // rotate :: state -> future[state]
 const rotate = function (state) {
-  const currentState = Object.apply({}, state);
+  const currentState = Object.assign({}, state);
   showArrows(getSelectedSquare(currentState.targeted));
   
   return new Promise((resolve, reject) => {
@@ -230,7 +280,9 @@ const drawBoard = function (view, model) {
       }
     });
   });
-}
+  view.querySelector('#elephants').textContent = model.elephantPool;
+  view.querySelector('#rhinos').textContent = model.rhinoPool;
+};
 
 // isYourPiece :: (Either[ELEPHANT | RHINO], Any) -> Bool
 const isYourPiece = function (currentPlayer, piece) {
