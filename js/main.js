@@ -7,10 +7,12 @@ const eleUp = 'gol0-up';
 const eleDown = 'gol0-down';
 const eleLeft = 'gol0-left';
 const eleRight = 'gol0-right';
+const eleNeutral = 'gol0-neutral';
 const rhinoUp = 'gol1-up';
 const rhinoDown = 'gol1-down';
 const rhinoLeft = 'gol1-left';
 const rhinoRight = 'gol1-right'; 
+const rhinoNeutral = 'gol1-neutral';
 const ELEPHANT = 0;
 const RHINO = 1;
 const NOTHING = 0;
@@ -21,6 +23,7 @@ const UP = 'up';
 const DOWN = 'down';
 const LEFT = 'left';
 const RIGHT = 'right';
+const NEUTRAL = 'neutral';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded!');
@@ -166,7 +169,7 @@ const playerTurn = function (state) {
     // Toggle between 0 and 1 for turn: +(to number) !!(to bool) !(not)
     nextState.turn = +!!!nextState.turn;
     removeHighlight(getSelectedSquare(nextState.selected));
-    removeArrows(getSelectedSquare(nextState.selected));
+    removeArrows(getSelectedSquare(nextState.targeted));
     removeSelected(nextState);
     gameboard.addEventListener('click', clickDelegation(nextState));
   }).catch((reason) => {
@@ -184,22 +187,32 @@ const moveToBoard = function (state) {
   const y = currentState.targeted[1];
   const currentPool = currentState.turn ? 'rhinoPool' : 'elephantPool';
 
-  const futureState = new Promise((resolve, reject) => {
-    //Do I need a nextState?? **UPDATE**
-    const nextState = Object.assign({}, currentState);
+  return new Promise((resolve, reject) => {
     if (isOnBorder([x, y])) {
       // Place piece depending on player turn
-      const piece = moveToBoardPiece(nextState);
-      nextState.board[y][x] = piece;
-      nextState[currentPool] -= 1;
-      drawBoard(gameboard, nextState);
-      
-      resolve(nextState);
+      const piece = moveToBoardPiece(currentState);
+      currentState.board[y][x] = piece;
+      currentState[currentPool] -= 1;
+      drawBoard(gameboard, currentState);
+
+      const rotateHandler = () => {
+
+        const futureState = rotate(currentState);
+
+        futureState.then((nextState) => {
+          console.log('Placed on board and rotated');
+          resolve(nextState);
+        }).catch((reason) => {
+          console.log(reason);
+          removeArrows(getSelectedSquare(nextState.targeted));
+          rotateHandler();
+        });
+      };
+      rotateHandler();
     } else {
       reject('Not valid move');
     }
   });
-  return futureState;
 };
 
 // pushFromSide :: state -> future[state]
@@ -209,7 +222,20 @@ const pushFromSide = function (state) {
 
 // removeFromBoard :: state -> future[state]
 const removeFromBoard = function (state) {
-  return new Promise((resolve, reject) => {reject('removeFromBoard not ready yet.')});
+  const currentState = Object.assign({}, state);
+  const x = currentState.selected[0];
+  const y = currentState.selected[1];
+  const currentPool = currentState.turn ? 'rhinoPool' : 'elephantPool';
+
+  return new Promise((resolve, reject) => {
+    if (isOnBorder([x, y])) {
+      currentState[currentPool] += 1;
+      currentState.board[y][x] = EMPTY;
+      resolve(currentState);
+    } else {
+      reject('Piece not on border');
+    }
+  });
 };
 
 // movePiece :: state -> future[state]
@@ -239,25 +265,25 @@ const rotate = function (state) {
             if (currentDirection === 'up') {
               reject('Already facing that way');
             }
-            newDirection = 'up';
+            newDirection = UP;
             break;
           case (arrowClasses.includes('down')):
             if (currentDirection === 'down') {
               reject('Already facing that way');
             }
-            newDirection = 'down';
+            newDirection = DOWN;
             break;
           case (arrowClasses.includes('left')):
             if (currentDirection === 'left') {
               reject('Already facing that way');
             }
-            newDirection = 'left';
+            newDirection = LEFT;
             break;
           case (arrowClasses.includes('right')):
             if (currentDirection === 'right') {
               reject('Already facing that way');
             }
-            newDirection = 'right';
+            newDirection = RIGHT;
             break;
           default:
             reject('Not a valid direction');
@@ -391,23 +417,5 @@ const moveToBoardPiece = function (state) {
   const y = state.targeted[1];
   const player = state.turn;
   let piece = player ? RHI : ELE;
-
-  switch (true) {
-    case (y == 0):
-      piece += DOWN;
-      break;
-    case (y == 4):
-      piece += UP;
-      break;
-    case (x == 0):
-      piece += RIGHT;
-      break;
-    case (x == 4):
-      piece += LEFT;
-      break;
-    default:
-      piece = 'ERROR';
-  }
-
-  return piece;
+  return piece + NEUTRAL;
 };
