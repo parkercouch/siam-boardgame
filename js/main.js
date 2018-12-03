@@ -204,7 +204,7 @@ const moveToBoard = function (state) {
           resolve(nextState);
         }).catch((reason) => {
           console.log(reason);
-          removeArrows(getSelectedSquare(nextState.targeted));
+          removeArrows(getSelectedSquare(currentState.targeted));
           rotateHandler();
         });
       };
@@ -240,7 +240,39 @@ const removeFromBoard = function (state) {
 
 // movePiece :: state -> future[state]
 const movePiece = function (state) {
-  return new Promise((resolve, reject) => {reject('movePiece not ready yet.')});
+  const currentState = Object.assign({}, state);
+  const xt = currentState.targeted[0];
+  const yt = currentState.targeted[1];
+  const xs = currentState.selected[0];
+  const ys = currentState.selected[1];
+  const targetSquare = currentState.board[yt][xt];
+
+  return new Promise((resolve, reject) => {
+    if (targetSquare === EMPTY) {
+      const piece = currentState.board[ys][xs].slice(0,5) + NEUTRAL;
+      currentState.board[yt][xt] = piece;
+      currentState.board[ys][xs] = EMPTY;
+      drawBoard(gameboard, currentState);
+
+      const rotateHandler = () => {
+
+        const futureState = rotate(currentState);
+
+        futureState.then((nextState) => {
+          console.log('Now Rotate!');
+          resolve(nextState);
+        }).catch((reason) => {
+          console.log(reason);
+          removeArrows(getSelectedSquare(currentState.targeted));
+          rotateHandler();
+        });
+      };
+      rotateHandler();
+    } else {
+      // Flag not valid until push function is made
+      reject('Not valid move');
+    }
+  });
 };
 
 // rotate :: state -> future[state]
@@ -304,9 +336,45 @@ const rotate = function (state) {
 
 // initiatePush :: state -> future[state]
 const initiatePush = function (state) {
-  return new Promise((resolve, reject) => {reject('initiatePush not ready yet.')});
+  const currentState = Object.assign({}, state);
+
+  return new Promise((resolve, reject) => {
+    if (inFront(currentState)) {
+      reject('not ready yet!');
+
+    } else {
+      reject('Can\'t push');
+    }
+  });
 };
 
+// inFront :: state -> Bool
+const inFront = function (state) {
+  const direction = state.board[state.selected[1]][state.selected[0]].slice(5);
+  let xs = state.selected[0];
+  let ys = state.selected[1];
+  const xt = state.targeted[0];
+  const yt = state.targeted[1];
+
+  switch (direction) {
+    case UP:
+      ys -= 1;
+      break;
+    case DOWN:
+      ys += 1;
+      break;
+    case LEFT:
+      xs -= 1;
+      break;
+    case RIGHT:
+      xs += 1;
+      break;
+    default:
+    return false;
+  }
+
+   return (xs === xt && ys === yt) ? true : false;
+};
 
 
 
