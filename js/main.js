@@ -166,6 +166,7 @@ const playerTurn = function (state) {
     // Toggle between 0 and 1 for turn: +(to number) !!(to bool) !(not)
     nextState.turn = +!!!nextState.turn;
     removeHighlight(getSelectedSquare(nextState.selected));
+    removeArrows(getSelectedSquare(nextState.selected));
     removeSelected(nextState);
     gameboard.addEventListener('click', clickDelegation(nextState));
   }).catch((reason) => {
@@ -201,36 +202,6 @@ const moveToBoard = function (state) {
   return futureState;
 };
 
-// moveToBoardPiece :: state -> String 
-const moveToBoardPiece = function (state) {
-  // Select piece and direction when moving from pool to board
-  const x = state.targeted[0];
-  const y = state.targeted[1];
-  const player = state.turn;
-  let piece = player ? RHI : ELE;
-
-  switch (true) {
-    case (y == 0):
-      piece += DOWN;
-      break;
-    case (y == 4):
-      piece += UP;
-      break;
-    case (x == 0):
-      piece += RIGHT;
-      break;
-    case (x == 4):
-      piece += LEFT;
-      break;
-    default:
-      piece = 'ERROR';
-  }
-
-  return piece;
-};
-
-
-
 // pushFromSide :: state -> future[state]
 const pushFromSide = function (state) {
   return new Promise((resolve, reject) => {reject('pushFromSide not ready yet.')});
@@ -252,7 +223,56 @@ const rotate = function (state) {
   showArrows(getSelectedSquare(currentState.targeted));
   
   return new Promise((resolve, reject) => {
-    reject('rotate not ready yet.')
+    const clickArrow = (currentState) => {
+      const nextState = Object.assign({}, currentState);
+      const handle = (evt) => {
+        // remove listener while handle is in scope
+        gameboard.removeEventListener('click', handle);
+        // Get current target and slice last half to get direction
+        const curTarget = nextState.targeted;
+        const currentDirection = nextState.board[curTarget[1]][curTarget[0]].slice(5);
+        const arrowClasses = [...evt.target.classList];
+        let newDirection;
+
+        switch (true) {
+          case (arrowClasses.includes('up')):
+            if (currentDirection === 'up') {
+              reject('Already facing that way');
+            }
+            newDirection = 'up';
+            break;
+          case (arrowClasses.includes('down')):
+            if (currentDirection === 'down') {
+              reject('Already facing that way');
+            }
+            newDirection = 'down';
+            break;
+          case (arrowClasses.includes('left')):
+            if (currentDirection === 'left') {
+              reject('Already facing that way');
+            }
+            newDirection = 'left';
+            break;
+          case (arrowClasses.includes('right')):
+            if (currentDirection === 'right') {
+              reject('Already facing that way');
+            }
+            newDirection = 'right';
+            break;
+          default:
+            reject('Not a valid direction');
+            return;
+        }
+
+        // Update direction and resolve
+        nextState.board[curTarget[1]][curTarget[0]] = nextState
+                .board[curTarget[1]][curTarget[0]].slice(0,5) + newDirection;
+
+        resolve(nextState);
+      };
+      return handle;
+    };
+    gameboard.addEventListener('click', clickArrow(currentState));
   });
 };
 
@@ -335,7 +355,7 @@ const showArrows = function(square) {
 };
 
 // hideArrows :: elem -> void
-const hideArrows = function(square) {
+const removeArrows = function(square) {
   const contents = [...square.children];
   contents.forEach((child) => {
     if (child.classList.contains('arrow')) {
@@ -364,3 +384,30 @@ const removeSelected = function (state) {
   state.targeted = 0;
 }
 
+// moveToBoardPiece :: state -> String 
+const moveToBoardPiece = function (state) {
+  // Select piece and direction when moving from pool to board
+  const x = state.targeted[0];
+  const y = state.targeted[1];
+  const player = state.turn;
+  let piece = player ? RHI : ELE;
+
+  switch (true) {
+    case (y == 0):
+      piece += DOWN;
+      break;
+    case (y == 4):
+      piece += UP;
+      break;
+    case (x == 0):
+      piece += RIGHT;
+      break;
+    case (x == 4):
+      piece += LEFT;
+      break;
+    default:
+      piece = 'ERROR';
+  }
+
+  return piece;
+};
