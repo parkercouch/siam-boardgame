@@ -2,7 +2,7 @@
 const gameboard = document.getElementById('gameboard');
 const EMPTY = 'empty';
 // Temp names
-const mountain = 'stone';
+const mountain = 'mtn3-neutral';
 const eleUp = 'gol0-up';
 const eleDown = 'gol0-down';
 const eleLeft = 'gol0-left';
@@ -148,10 +148,14 @@ const playerTurn = function (state) {
       case (targetLocation === POOL):
         futureState = removeFromBoard(currentState);
         break;
+      case (targetLocation === mountain):
+        futureState = initiatePush(currentState);
+        break;
       case (targetLocation === EMPTY):
         futureState = movePiece(currentState);
         break;
-      case (targetLocation === selectedPiece):
+      case (targetedCoords.x === selectedCoords.x
+          && targetedCoords.y === targetedCoords.y):
         futureState = rotate(currentState);
         break;
       case (targetLocation !== EMPTY):
@@ -215,6 +219,9 @@ const moveToBoard = function (state) {
   });
 };
 
+// HOW TO IMPLEMENT CORNER CASES? ARROWS POP UP?
+// WHAT IF PUSHING ISN'T POSSIBLE? CHECK BOTH DIRECTIONS
+// FIRST THEN ALLOW SO WE DON'T GET STUCK?
 // pushFromSide :: state -> future[state]
 const pushFromSide = function (state) {
   return new Promise((resolve, reject) => {reject('pushFromSide not ready yet.')});
@@ -340,7 +347,34 @@ const initiatePush = function (state) {
 
   return new Promise((resolve, reject) => {
     if (inFront(currentState)) {
-      reject('not ready yet!');
+      // reject('not ready yet!');
+      console.log('Facing Forward')
+      console.log(currentState);
+      const pusher = currentState.board[currentState.selected[1]][currentState.selected[0]];
+
+      console.log(pusher);
+      const rowInFront = getRowInFront(currentState);
+      
+      // [map] check directions of pieces
+      const pushedRow = rowInFront.map((pieceName) => { pieceName.slice(5); });
+
+      // [map] assign push strength values 
+      // [reduce] sum
+      const pushAmount = 1 + assignPushStrength(pushedRow, pusher).reduce((a,b) => a + b);
+      console.log(pushAmount);
+
+      // Get x,y coords of pushed elements
+      const coordsOfRow = getCoordsInFront(currentState);
+
+      // If able to push, then move all pieces 1 then resolve
+      if (pushAmount > 0) {
+        resolve(pushRow(coordsOfRow, currentState));
+      } else {
+        reject('Not strong enough');
+      }
+
+      
+
 
     } else {
       reject('Can\'t push');
@@ -348,35 +382,178 @@ const initiatePush = function (state) {
   });
 };
 
-// inFront :: state -> Bool
-const inFront = function (state) {
-  const direction = state.board[state.selected[1]][state.selected[0]].slice(5);
-  let xs = state.selected[0];
-  let ys = state.selected[1];
-  const xt = state.targeted[0];
-  const yt = state.targeted[1];
+// pushRow :: ([[x,y]], state) -> state
+const pushRow = function (coords, state) {
+  console.log('PUSHING!');
+  const currentState = Object.assign({}, state);
+
+  const direction = currentState.board[currentState.selected[1]][currentState.selected[0]].slice(5);
 
   switch (direction) {
     case UP:
-      ys -= 1;
-      break;
     case DOWN:
-      ys += 1;
-      break;
     case LEFT:
-      xs -= 1;
-      break;
     case RIGHT:
-      xs += 1;
-      break;
     default:
-    return false;
   }
 
-   return (xs === xt && ys === yt) ? true : false;
+
+
+
+  return state;
+};
+
+// getRowInFront :: state -> [string]
+const getRowInFront = function (state) {
+  const pusher = state.board[state.selected[1]][state.selected[0]];
+  const direction = pusher.slice(5);
+  const xp = state.selected[0];
+  const yp = state.selected[1];
+  let pushedRow = [];
+
+  switch (direction) {
+    case UP:
+      state.board.forEach((row, yb) => {
+        return row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb >= yp) {
+              return;
+            } else {
+              pushedRow.unshift(square);
+            }
+          }
+        });
+      });
+      break
+    case DOWN:
+      state.board.forEach((row, yb) => {
+        row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb !== yp) {
+              pushedRow.push(square);
+            }
+          }
+        });
+      });
+      break
+    case LEFT:
+      pushedRow = state.board[yp].slice(0, xp).reverse();
+      break
+    case RIGHT:
+      pushedRow = state.board[yp].slice(xp + 1);
+      break
+    default:
+      pushedRow = [];
+      return;
+  }
+
+  if (pushedRow.includes(EMPTY)) {
+    pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
+  }
+  return pushedRow;
+};
+
+// getCoordsInFront :: state -> [[x,y]]
+const getCoordsInFront = function (state) {
+  const pusher = state.board[state.selected[1]][state.selected[0]];
+  const direction = pusher.slice(5);
+  const xp = state.selected[0];
+  const yp = state.selected[1];
+  let pushedRow = [];
+
+  switch (direction) {
+    case UP:
+      state.board.forEach((row, yb) => {
+        return row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb >= yp) {
+              return;
+            } else {
+              pushedRow.unshift([xb, yb]);
+            }
+          }
+        });
+      });
+      break
+    case DOWN:
+      state.board.forEach((row, yb) => {
+        row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb !== yp) {
+              pushedRow.push([xb, yb]);
+            }
+          }
+        });
+      });
+      break
+    case LEFT:
+      state.board[yp].forEach((square, xb) => {
+        if (xb >= xy) {
+          return;
+        }
+        if (square === EMPTY) {
+          pushedRow.unshift(EMPTY);
+        } else {
+          pushedRow.unshift([xb, yb]);
+        }
+      });
+      break
+    case RIGHT:
+      state.board[yp].forEach((square, xb) => {
+        if (xb <= xp) {
+          return;
+        }
+        if (square === EMPTY) {
+          pushedRow.push(EMPTY);
+        } else {
+          pushedRow.push([xb, yb]);
+        }
+      });
+      pushedRow = tate.board[yp].slice(xp + 1);
+      break
+    default:
+      pushedRow = [];
+      return;
+  }
+
+  if (pushedRow.includes(EMPTY)) {
+    pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
+  }
+  return pushedRow;
 };
 
 
+// assignPushStrength :: [string], string -> [Float]
+// same direction -> +1, opposite direction -> -1
+// other directions -> 0, rocks -> 0.5
+const assignPushStrength = function (pieces, pusher) {
+  let opposite;
+  switch (pusher) {
+    case UP:
+      opposite = DOWN;
+    case DOWN:
+      opposite = UP;
+    case LEFT:
+      opposite = RIGHT;
+    case RIGHT:
+      opposite = LEFT;
+    default:
+      opposite = NEUTRAL;
+  }
+
+  return pieces.map((direction) => {
+    switch (true) {
+      case (direction === pusher):
+        return +1;
+      case (direction === opposite):
+        return (-1);
+      case (direction === NEUTRAL):
+        return (0.5);
+      default:
+        return 0;
+    }
+  })
+};
 
 
 // ------------------------------------------------- //
@@ -486,4 +663,32 @@ const moveToBoardPiece = function (state) {
   const player = state.turn;
   let piece = player ? RHI : ELE;
   return piece + NEUTRAL;
+};
+
+// inFront :: state -> Bool
+const inFront = function (state) {
+  const direction = state.board[state.selected[1]][state.selected[0]].slice(5);
+  let xs = state.selected[0];
+  let ys = state.selected[1];
+  const xt = state.targeted[0];
+  const yt = state.targeted[1];
+
+  switch (direction) {
+    case UP:
+      ys -= 1;
+      break;
+    case DOWN:
+      ys += 1;
+      break;
+    case LEFT:
+      xs -= 1;
+      break;
+    case RIGHT:
+      xs += 1;
+      break;
+    default:
+    return false;
+  }
+
+   return (xs === xt && ys === yt) ? true : false;
 };
