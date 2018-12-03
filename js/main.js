@@ -219,11 +219,12 @@ const moveToBoard = function (state) {
   });
 };
 
+// NOT READY
+// pushFromSide :: state -> future[state]
+const pushFromSide = function (state) {
 // HOW TO IMPLEMENT CORNER CASES? ARROWS POP UP?
 // WHAT IF PUSHING ISN'T POSSIBLE? CHECK BOTH DIRECTIONS
 // FIRST THEN ALLOW SO WE DON'T GET STUCK?
-// pushFromSide :: state -> future[state]
-const pushFromSide = function (state) {
   return new Promise((resolve, reject) => {reject('pushFromSide not ready yet.')});
 };
 
@@ -382,18 +383,42 @@ const initiatePush = function (state) {
   });
 };
 
+// NOT READY
 // pushRow :: ([[x,y]], state) -> state
 const pushRow = function (coords, state) {
   console.log('PUSHING!');
   const currentState = Object.assign({}, state);
+  const moveThese = coords.reverse();
 
   const direction = currentState.board[currentState.selected[1]][currentState.selected[0]].slice(5);
+  let deltaX;
+  let deltaY;
 
   switch (direction) {
     case UP:
+    // y - 1
+    // [0, -1]
+      deltaX = 0;
+      deltaY = -1;
+      break;
     case DOWN:
+    // y + 1
+    // [0, -1]
+      deltaX = 0;
+      deltaY = 1;
+      break;
     case LEFT:
+    // x - 1
+    // [-1, 0]
+      deltaX = -1;
+      deltaY = 0;
+      break;
     case RIGHT:
+    // x + 1
+    // [1, 0]
+      deltaX = 1;
+      deltaY = 0;
+      break;
     default:
   }
 
@@ -403,157 +428,6 @@ const pushRow = function (coords, state) {
   return state;
 };
 
-// getRowInFront :: state -> [string]
-const getRowInFront = function (state) {
-  const pusher = state.board[state.selected[1]][state.selected[0]];
-  const direction = pusher.slice(5);
-  const xp = state.selected[0];
-  const yp = state.selected[1];
-  let pushedRow = [];
-
-  switch (direction) {
-    case UP:
-      state.board.forEach((row, yb) => {
-        return row.forEach((square, xb) => {
-          if (xb === xp) {
-            if (yb >= yp) {
-              return;
-            } else {
-              pushedRow.unshift(square);
-            }
-          }
-        });
-      });
-      break
-    case DOWN:
-      state.board.forEach((row, yb) => {
-        row.forEach((square, xb) => {
-          if (xb === xp) {
-            if (yb !== yp) {
-              pushedRow.push(square);
-            }
-          }
-        });
-      });
-      break
-    case LEFT:
-      pushedRow = state.board[yp].slice(0, xp).reverse();
-      break
-    case RIGHT:
-      pushedRow = state.board[yp].slice(xp + 1);
-      break
-    default:
-      pushedRow = [];
-      return;
-  }
-
-  if (pushedRow.includes(EMPTY)) {
-    pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
-  }
-  return pushedRow;
-};
-
-// getCoordsInFront :: state -> [[x,y]]
-const getCoordsInFront = function (state) {
-  const pusher = state.board[state.selected[1]][state.selected[0]];
-  const direction = pusher.slice(5);
-  const xp = state.selected[0];
-  const yp = state.selected[1];
-  let pushedRow = [];
-
-  switch (direction) {
-    case UP:
-      state.board.forEach((row, yb) => {
-        return row.forEach((square, xb) => {
-          if (xb === xp) {
-            if (yb >= yp) {
-              return;
-            } else {
-              pushedRow.unshift([xb, yb]);
-            }
-          }
-        });
-      });
-      break
-    case DOWN:
-      state.board.forEach((row, yb) => {
-        row.forEach((square, xb) => {
-          if (xb === xp) {
-            if (yb !== yp) {
-              pushedRow.push([xb, yb]);
-            }
-          }
-        });
-      });
-      break
-    case LEFT:
-      state.board[yp].forEach((square, xb) => {
-        if (xb >= xy) {
-          return;
-        }
-        if (square === EMPTY) {
-          pushedRow.unshift(EMPTY);
-        } else {
-          pushedRow.unshift([xb, yb]);
-        }
-      });
-      break
-    case RIGHT:
-      state.board[yp].forEach((square, xb) => {
-        if (xb <= xp) {
-          return;
-        }
-        if (square === EMPTY) {
-          pushedRow.push(EMPTY);
-        } else {
-          pushedRow.push([xb, yb]);
-        }
-      });
-      pushedRow = tate.board[yp].slice(xp + 1);
-      break
-    default:
-      pushedRow = [];
-      return;
-  }
-
-  if (pushedRow.includes(EMPTY)) {
-    pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
-  }
-  return pushedRow;
-};
-
-
-// assignPushStrength :: [string], string -> [Float]
-// same direction -> +1, opposite direction -> -1
-// other directions -> 0, rocks -> 0.5
-const assignPushStrength = function (pieces, pusher) {
-  let opposite;
-  switch (pusher) {
-    case UP:
-      opposite = DOWN;
-    case DOWN:
-      opposite = UP;
-    case LEFT:
-      opposite = RIGHT;
-    case RIGHT:
-      opposite = LEFT;
-    default:
-      opposite = NEUTRAL;
-  }
-
-  return pieces.map((direction) => {
-    switch (true) {
-      case (direction === pusher):
-        return +1;
-      case (direction === opposite):
-        return (-1);
-      case (direction === NEUTRAL):
-        return (0.5);
-      default:
-        return 0;
-    }
-  })
-};
 
 
 // ------------------------------------------------- //
@@ -691,4 +565,155 @@ const inFront = function (state) {
   }
 
    return (xs === xt && ys === yt) ? true : false;
+};
+
+// getRowInFront :: state -> [string]
+const getRowInFront = function (state) {
+  const pusher = state.board[state.selected[1]][state.selected[0]];
+  const direction = pusher.slice(5);
+  const xp = state.selected[0];
+  const yp = state.selected[1];
+  let pushedRow = [];
+
+  switch (direction) {
+    case UP:
+      state.board.forEach((row, yb) => {
+        return row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb >= yp) {
+              return;
+            } else {
+              pushedRow.unshift(square);
+            }
+          }
+        });
+      });
+      break
+    case DOWN:
+      state.board.forEach((row, yb) => {
+        row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb !== yp) {
+              pushedRow.push(square);
+            }
+          }
+        });
+      });
+      break
+    case LEFT:
+      pushedRow = state.board[yp].slice(0, xp).reverse();
+      break
+    case RIGHT:
+      pushedRow = state.board[yp].slice(xp + 1);
+      break
+    default:
+      pushedRow = [];
+      return;
+  }
+
+  if (pushedRow.includes(EMPTY)) {
+    pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
+  }
+  return pushedRow;
+};
+
+// getCoordsInFront :: state -> [[x,y]]
+const getCoordsInFront = function (state) {
+  const pusher = state.board[state.selected[1]][state.selected[0]];
+  const direction = pusher.slice(5);
+  const xp = state.selected[0];
+  const yp = state.selected[1];
+  let pushedRow = [];
+
+  switch (direction) {
+    case UP:
+      state.board.forEach((row, yb) => {
+        return row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb >= yp) {
+              return;
+            } else {
+              pushedRow.unshift([xb, yb]);
+            }
+          }
+        });
+      });
+      break
+    case DOWN:
+      state.board.forEach((row, yb) => {
+        row.forEach((square, xb) => {
+          if (xb === xp) {
+            if (yb !== yp) {
+              pushedRow.push([xb, yb]);
+            }
+          }
+        });
+      });
+      break
+    case LEFT:
+      state.board[yp].forEach((square, xb) => {
+        if (xb >= xy) {
+          return;
+        }
+        if (square === EMPTY) {
+          pushedRow.unshift(EMPTY);
+        } else {
+          pushedRow.unshift([xb, yb]);
+        }
+      });
+      break
+    case RIGHT:
+      state.board[yp].forEach((square, xb) => {
+        if (xb <= xp) {
+          return;
+        }
+        if (square === EMPTY) {
+          pushedRow.push(EMPTY);
+        } else {
+          pushedRow.push([xb, yb]);
+        }
+      });
+      pushedRow = tate.board[yp].slice(xp + 1);
+      break
+    default:
+      pushedRow = [];
+      return;
+  }
+
+  if (pushedRow.includes(EMPTY)) {
+    pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
+  }
+  return pushedRow;
+};
+
+// assignPushStrength :: [string], string -> [Float]
+const assignPushStrength = function (pieces, pusher) {
+  let opposite;
+  switch (pusher) {
+    case UP:
+      opposite = DOWN;
+    case DOWN:
+      opposite = UP;
+    case LEFT:
+      opposite = RIGHT;
+    case RIGHT:
+      opposite = LEFT;
+    default:
+      opposite = NEUTRAL;
+  }
+
+  // same direction -> +1, opposite direction -> -1
+  // other directions -> 0, rocks -> 0.5
+  return pieces.map((direction) => {
+    switch (true) {
+      case (direction === pusher):
+        return +1;
+      case (direction === opposite):
+        return (-1);
+      case (direction === NEUTRAL):
+        return (0.5);
+      default:
+        return 0;
+    }
+  })
 };
