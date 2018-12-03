@@ -36,30 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
   gameboard.addEventListener('click', clickDelegation(state), false);
 });
 
-// drawBoard :: (elem, state) => void
-const drawBoard = function (view, model) {
-  model.board.forEach((row, y) => {
-    row.forEach((space, x) => {
-      if (model.board[y][x] === EMPTY) {
-        view.querySelector(`#s${x}${y} img`).src = '';
-      } else {
-        view.querySelector(`#s${x}${y} img`).src = `img/${model.board[y][x]}.png`;
-      }
-    });
-  });
-}
-
 
 // When clicked
-// clickDelegation :: state => (evt) => void
+// clickDelegation :: state -> (evt) -> void
 const clickDelegation = (state) => {
   const handle = (evt) => {
     const currentState = Object.assign({}, state);
     console.log('clicked!')
-    // console.log(currentState);
+
     // Bail if nothing valid is clicked
     if (!evt.target.matches('.clickable')) return;
     evt.preventDefault();
+
     let clickTarget = evt.target;
     // UPDATE!! will need to change depending on html formatting
     if (clickTarget.tagName === 'IMG') {
@@ -68,6 +56,7 @@ const clickDelegation = (state) => {
     console.log(clickTarget);
     
     console.log('Clickable!!');
+    // Remove listener while we have reference to handle
     gameboard.removeEventListener('click', handle);
 
     // get x,y coords from element clicked
@@ -98,19 +87,9 @@ const clickDelegation = (state) => {
   return handle;
 };
 
-// isYourPiece :: (Either[ELEPHANT | RHINO], Any) => Bool
-const isYourPiece = function (currentPlayer, piece) {
-  console.log(`piece: ${piece}`);
-  return (piece.toString().indexOf(currentPlayer) >= 0);
-};
-
-// playerTurn :: state => void
+// playerTurn :: state -> void
 const playerTurn = function (state) {
   const currentState = Object.assign({}, state);
-  // RANDOM MOVE TO TEST
-  // const x = 0;
-  // const y = 5;
-
 
   const selectedCoords = {
     x : Number.parseInt(currentState.selected[0]),
@@ -131,18 +110,13 @@ const playerTurn = function (state) {
   } else {
     selectedPiece = currentState.board[selectedCoords.y][selectedCoords.x];
   }
-
   const targetLocation = currentState.board[targetedCoords.y][targetedCoords.x];
 
-  // console.log('playerTurn');
-  // console.log(`(${coords.x},${coords.y})`)
-  // console.log(state);
 
   let futureState = 0;
 
   //----------- ACTION! -----------//
   
-  // 5 is off-board
   if (selectedPiece === POOL) {
     if (targetLocation === EMPTY) {
      futureState = moveToBoard(currentState); 
@@ -170,10 +144,13 @@ const playerTurn = function (state) {
   }
 
 
-  //NEED TO ADD RESET TO HIGHLIGHTING AND UPDATE TURN
   futureState.then((nextState) => {
     console.log('Valid Move');
     drawBoard(gameboard, nextState);
+    // Toggle between 0 and 1 for turn: +(to number) !!(to bool) !(not)
+    nextState.turn = +!!!nextState.turn;
+    removeHighlight(getSelectedSquare(nextState.selected));
+    removeSelected(nextState);
     gameboard.addEventListener('click', clickDelegation(nextState));
   }).catch((reason) => {
     console.log(reason);
@@ -183,7 +160,7 @@ const playerTurn = function (state) {
   });
 };
 
-// moveToBoard :: state => future[state]
+// moveToBoard :: state -> future[state]
 const moveToBoard = function (state) {
   const currentState = Object.assign({}, state);
   const x = currentState.targeted[0];
@@ -194,6 +171,8 @@ const moveToBoard = function (state) {
     const nextState = Object.assign({}, currentState);
     if (isOnBorder([x, y])) {
       nextState.board[y][x] = eleDown;
+      drawBoard(gameboard, nextState);
+      
       resolve(nextState);
     } else {
       reject('Not valid move');
@@ -202,7 +181,64 @@ const moveToBoard = function (state) {
   return futureState;
 };
 
-// isOnBorder :: [x,y] => Bool
+// pushFromSide :: state -> future[state]
+const pushFromSide = function (state) {
+  return new Promise((resolve, reject) => {reject('pushFromSide not ready yet.')});
+};
+
+// removeFromBoard :: state -> future[state]
+const removeFromBoard = function (state) {
+  return new Promise((resolve, reject) => {reject('removeFromBoard not ready yet.')});
+};
+
+// movePiece :: state -> future[state]
+const movePiece = function (state) {
+  return new Promise((resolve, reject) => {reject('movePiece not ready yet.')});
+};
+
+// rotate :: state -> future[state]
+const rotate = function (state) {
+  const currentState = Object.apply({}, state);
+  showArrows(getSelectedSquare(currentState.targeted));
+  
+  return new Promise((resolve, reject) => {
+    reject('rotate not ready yet.')
+  });
+};
+
+// initiatePush :: state -> future[state]
+const initiatePush = function (state) {
+  return new Promise((resolve, reject) => {reject('initiatePush not ready yet.')});
+};
+
+
+
+
+
+// ------------------------------------------------- //
+// ------------ HELPER FUNCTIONS ------------------- //
+// ------------------------------------------------- //
+
+// drawBoard :: (elem, state) -> void
+const drawBoard = function (view, model) {
+  model.board.forEach((row, y) => {
+    row.forEach((space, x) => {
+      if (model.board[y][x] === EMPTY) {
+        view.querySelector(`#s${x}${y} img`).src = '';
+      } else {
+        view.querySelector(`#s${x}${y} img`).src = `img/${model.board[y][x]}.png`;
+      }
+    });
+  });
+}
+
+// isYourPiece :: (Either[ELEPHANT | RHINO], Any) -> Bool
+const isYourPiece = function (currentPlayer, piece) {
+  console.log(`piece: ${piece}`);
+  return (piece.toString().indexOf(currentPlayer) >= 0);
+};
+
+// isOnBorder :: [x,y] -> Bool
 const isOnBorder = function (coords) {
   // Can probably re-write with array functions
   if (coords[0] === 0 || coords[1] === 0 ||
@@ -212,36 +248,67 @@ const isOnBorder = function (coords) {
   return false;
 };
 
-// pushFromSide :: state => future[state]
-const pushFromSide = function (state) {
-  return new Promise((resolve, reject) => {reject('pushFromSide not ready yet.')});
+// getSelectedSquare :: [x,y] -> elem
+const getSelectedSquare = function (coords) {
+  const x = coords[0];
+  const y = coords[1];
+
+  // If it is off the board (aka pool)
+  if (y === 5) {
+    return document.getElementById(`p${x}${y}`)
+  } else {
+    return document.getElementById(`s${x}${y}`);
+  }
 };
 
-// removeFromBoard :: state => future[state]
-const removeFromBoard = function (state) {
-  return new Promise((resolve, reject) => {reject('removeFromBoard not ready yet.')});
+// showArrows :: elem -> void
+const showArrows = function(square) {
+  const upArrow = document.createElement('img');
+  const downArrow = document.createElement('img');
+  const leftArrow = document.createElement('img');
+  const rightArrow = document.createElement('img');
+  upArrow.classList.add('clickable', 'arrow', 'up');
+  downArrow.classList.add('clickable', 'arrow', 'down');
+  leftArrow.classList.add('clickable', 'arrow', 'left');
+  rightArrow.classList.add('clickable', 'arrow', 'right');
+  upArrow.setAttribute('src', 'img/arrow-up.png');
+  downArrow.setAttribute('src', 'img/arrow-down.png');
+  leftArrow.setAttribute('src', 'img/arrow-left.png');
+  rightArrow.setAttribute('src', 'img/arrow-right.png');
+  square.classList.add('arrow-container');
+  square.appendChild(upArrow);
+  square.appendChild(leftArrow);
+  square.appendChild(rightArrow);
+  square.appendChild(downArrow);
 };
 
-// movePiece :: state => future[state]
-const movePiece = function (state) {
-  return new Promise((resolve, reject) => {reject('movePiece not ready yet.')});
+// hideArrows :: elem -> void
+const hideArrows = function(square) {
+  const contents = [...square.children];
+  contents.forEach((child) => {
+    if (child.classList.contains('arrow')) {
+     child.remove();
+    }
+  });
+  square.classList.remove('arrow-container');
 };
 
-// rotate :: state => future[state]
-const rotate = function (state) {
-  return new Promise((resolve, reject) => {reject('rotate not ready yet.')});
+// highlight :: elem -> void
+const highlight = function (toHighlight) {
+  toHighlight.classList.add('highlight');
 };
 
-// initiatePush :: state => future[state]
-const initiatePush = function (state) {
-  return new Promise((resolve, reject) => {reject('initiatePush not ready yet.')});
+// highlightValid :: [board] -> Int(action) -> void
+
+// removeHighlight :: elem -> void 
+const removeHighlight = function (highlighted) {
+  highlighted.classList.remove('highlight');
 };
 
-// highlight :: elem => void
-const highlight = function (element) {
-  element.classList.add('highlight');
-};
+// **Modifies state without copy**
+// removeSelected :: state -> void
+const removeSelected = function (state) {
+  state.selected = 0;
+  state.targeted = 0;
+}
 
-// highlightValid :: [board] => Int(action) => void
-
-// clearHighlight :: () => void 
