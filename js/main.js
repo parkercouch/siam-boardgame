@@ -132,11 +132,16 @@ const playerTurn = function (state) {
   const targetLocation = (targetedCoords.y === 5) ?
                         POOL : currentState.board[targetedCoords.y][targetedCoords.x];
 
+  const deltaX = delta(selectedCoords.x, targetedCoords.x);
+  const deltaY = delta(selectedCoords.y, targetedCoords.y);
+
 
   let futureState = 0;
 
   //----------- ACTION! -----------//
-  
+ 
+  console.log('Choosing Action');
+  console.log(currentState);
   if (selectedPiece === POOL) {
     if (targetLocation === EMPTY) {
      futureState = moveToBoard(currentState); 
@@ -151,11 +156,13 @@ const playerTurn = function (state) {
       case (targetLocation === mountain):
         futureState = initiatePush(currentState);
         break;
-      case (targetLocation === EMPTY):
+        // dx <= 1 and dy == 0  or  dx == 0 and dy <= 1 ORTHOGONAL ONLY
+      case (targetLocation === EMPTY &&
+         ( ( deltaX <= 1 && deltaY === 0 ) || ( deltaX === 0 && deltaY <= 1 ) )):
         futureState = movePiece(currentState);
         break;
       case (targetedCoords.x === selectedCoords.x
-          && targetedCoords.y === targetedCoords.y):
+          && targetedCoords.y === selectedCoords.y):
         futureState = rotate(currentState);
         break;
       case (targetLocation !== EMPTY):
@@ -388,7 +395,7 @@ const initiatePush = function (state) {
 const pushRow = function (coords, state) {
   console.log('PUSHING!');
   const currentState = Object.assign({}, state);
-  const moveThese = coords.reverse();
+  const moving = coords.reverse();
 
   const direction = currentState.board[currentState.selected[1]][currentState.selected[0]].slice(5);
   let deltaX;
@@ -396,31 +403,39 @@ const pushRow = function (coords, state) {
 
   switch (direction) {
     case UP:
-    // y - 1
     // [0, -1]
       deltaX = 0;
       deltaY = -1;
       break;
     case DOWN:
-    // y + 1
     // [0, -1]
       deltaX = 0;
       deltaY = 1;
       break;
     case LEFT:
-    // x - 1
     // [-1, 0]
       deltaX = -1;
       deltaY = 0;
       break;
     case RIGHT:
-    // x + 1
     // [1, 0]
       deltaX = 1;
       deltaY = 0;
       break;
     default:
   }
+
+  console.log(moving);
+  console.log(deltaX);
+  console.log(deltaY);
+  moving.forEach((coord) => {
+    currentState.board[coord[1] + deltaY][coord[0] + deltaX] = 
+    currentState.board[coord[1]][coord[0]];
+  });
+
+  currentState.board[currentState.selected[1] + deltaY][currentState.selected[0] + deltaX] = currentState.board[currentState.selected[1]][currentState.selected[0]];
+  currentState.board[currentState.selected[1]][currentState.selected[0]] = EMPTY;
+
 
 
 
@@ -593,7 +608,7 @@ const getRowInFront = function (state) {
       state.board.forEach((row, yb) => {
         row.forEach((square, xb) => {
           if (xb === xp) {
-            if (yb !== yp) {
+            if (yb > yp) {
               pushedRow.push(square);
             }
           }
@@ -625,15 +640,23 @@ const getCoordsInFront = function (state) {
   const yp = state.selected[1];
   let pushedRow = [];
 
+  console.log('In getCoordsInFront')
+  console.log(`${direction}, ${xp},${yp}, ${pusher}`);
+
+  // This is nonsense and needs cleaned up!
   switch (direction) {
     case UP:
       state.board.forEach((row, yb) => {
-        return row.forEach((square, xb) => {
+        row.forEach((square, xb) => {
           if (xb === xp) {
             if (yb >= yp) {
               return;
             } else {
-              pushedRow.unshift([xb, yb]);
+              if (square === EMPTY) {
+                pushedRow.unshift(EMPTY);
+              } else {
+                pushedRow.unshift([xb, yb]);
+              }
             }
           }
         });
@@ -643,8 +666,12 @@ const getCoordsInFront = function (state) {
       state.board.forEach((row, yb) => {
         row.forEach((square, xb) => {
           if (xb === xp) {
-            if (yb !== yp) {
-              pushedRow.push([xb, yb]);
+            if (yb > yp) {
+              if (square === EMPTY) {
+                pushedRow.push(EMPTY);
+              } else {
+                pushedRow.push([xb, yb]);
+              }
             }
           }
         });
@@ -652,13 +679,13 @@ const getCoordsInFront = function (state) {
       break
     case LEFT:
       state.board[yp].forEach((square, xb) => {
-        if (xb >= xy) {
+        if (xb >= xp) {
           return;
         }
         if (square === EMPTY) {
           pushedRow.unshift(EMPTY);
         } else {
-          pushedRow.unshift([xb, yb]);
+          pushedRow.unshift([xb, yp]);
         }
       });
       break
@@ -670,10 +697,10 @@ const getCoordsInFront = function (state) {
         if (square === EMPTY) {
           pushedRow.push(EMPTY);
         } else {
-          pushedRow.push([xb, yb]);
+          pushedRow.push([xb, yp]);
         }
       });
-      pushedRow = tate.board[yp].slice(xp + 1);
+      pushedRow = state.board[yp].slice(xp + 1);
       break
     default:
       pushedRow = [];
@@ -707,13 +734,19 @@ const assignPushStrength = function (pieces, pusher) {
   return pieces.map((direction) => {
     switch (true) {
       case (direction === pusher):
-        return +1;
+        return 1;
       case (direction === opposite):
         return (-1);
       case (direction === NEUTRAL):
-        return (0.5);
+        return 0.5;
       default:
         return 0;
     }
   })
+};
+
+// delta :: (+/-)INT -> (+/-)INT -> (+)INT
+const delta = function (num1, num2){
+  
+  return (num1 > num2)? num1-num2 : num2-num1;
 };
