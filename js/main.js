@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
 const clickDelegation = (state) => {
   const handle = (evt) => {
     const currentState = Object.assign({}, state);
-    console.log('clicked!')
 
     // Bail if nothing valid is clicked
     if (!evt.target.matches('.clickable')) return;
@@ -64,15 +63,12 @@ const clickDelegation = (state) => {
     }
     console.log(clickTarget);
     
-    console.log('Clickable!!');
     // Remove listener while we have reference to handle
     gameboard.removeEventListener('click', handle);
 
     // get x,y coords from element clicked
     const x = Number.parseInt(clickTarget.id[1]);
     const y = Number.parseInt(clickTarget.id[2]);
-    console.log(`clicktarget: (${x},${y})`);
-    // NEED to add check if pool has contents
 
     // 1 -> rhino, 0 -> elephant
     const currentPool = (currentState.turn) ? currentState.rhinoPool
@@ -140,7 +136,6 @@ const playerTurn = function (state) {
 
   //----------- ACTION! -----------//
  
-  console.log('Choosing Action');
   console.log(currentState);
   if (selectedPiece === POOL) {
     if (targetLocation === EMPTY) {
@@ -211,10 +206,9 @@ const moveToBoard = function (state) {
         const futureState = rotate(currentState);
 
         futureState.then((nextState) => {
-          console.log('Placed on board and rotated');
           resolve(nextState);
         }).catch((reason) => {
-          console.log(reason);
+          // console.log(reason);
           removeArrows(getSelectedSquare(currentState.targeted));
           rotateHandler();
         });
@@ -274,9 +268,9 @@ const movePiece = function (state) {
         const futureState = rotate(currentState);
 
         futureState.then((nextState) => {
-          console.log('Now Rotate!');
           resolve(nextState);
         }).catch((reason) => {
+          // UPDATE after done testing
           console.log(reason);
           removeArrows(getSelectedSquare(currentState.targeted));
           rotateHandler();
@@ -355,21 +349,22 @@ const initiatePush = function (state) {
 
   return new Promise((resolve, reject) => {
     if (inFront(currentState)) {
-      // reject('not ready yet!');
-      console.log('Facing Forward')
-      console.log(currentState);
       const pusher = currentState.board[currentState.selected[1]][currentState.selected[0]];
 
-      console.log(pusher);
       const rowInFront = getRowInFront(currentState);
+      console.log('rowInFront:');
+      console.log(rowInFront);
       
       // [map] check directions of pieces
-      const pushedRow = rowInFront.map((pieceName) => { pieceName.slice(5); });
+      const pushedRow = rowInFront.map((pieceName) => pieceName.slice(5));
 
       // [map] assign push strength values 
       // [reduce] sum
+      
+      console.log('pushedRow:')
+      console.log(pushedRow);
       const pushAmount = 1 + assignPushStrength(pushedRow, pusher).reduce((a,b) => a + b);
-      console.log(pushAmount);
+      console.log(`pushAmount: ${pushAmount}`);
 
       // Get x,y coords of pushed elements
       const coordsOfRow = getCoordsInFront(currentState);
@@ -394,6 +389,9 @@ const initiatePush = function (state) {
 // pushRow :: ([[x,y]], state) -> state
 const pushRow = function (coords, state) {
   console.log('PUSHING!');
+  console.log(coords);
+  console.log(state);
+
   const currentState = Object.assign({}, state);
   const moving = coords.reverse();
 
@@ -425,9 +423,6 @@ const pushRow = function (coords, state) {
     default:
   }
 
-  console.log(moving);
-  console.log(deltaX);
-  console.log(deltaY);
   moving.forEach((coord) => {
     currentState.board[coord[1] + deltaY][coord[0] + deltaX] = 
     currentState.board[coord[1]][coord[0]];
@@ -688,7 +683,7 @@ const getCoordsInFront = function (state) {
           pushedRow.unshift([xb, yp]);
         }
       });
-      break
+      break;
     case RIGHT:
       state.board[yp].forEach((square, xb) => {
         if (xb <= xp) {
@@ -700,45 +695,54 @@ const getCoordsInFront = function (state) {
           pushedRow.push([xb, yp]);
         }
       });
-      pushedRow = state.board[yp].slice(xp + 1);
-      break
+      break;
     default:
       pushedRow = [];
       return;
   }
 
+  // console.log(`coords ${pushedRow}`);
+
   if (pushedRow.includes(EMPTY)) {
     pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
   }
+  // console.log(`returning ${pushedRow}`)
   return pushedRow;
 };
 
 // assignPushStrength :: [string], string -> [Float]
 const assignPushStrength = function (pieces, pusher) {
   let opposite;
-  switch (pusher) {
+  const pusherDirection = pusher.slice(5);
+  console.log(pusherDirection);
+  switch (pusherDirection) {
     case UP:
       opposite = DOWN;
+      break;
     case DOWN:
       opposite = UP;
+      break;
     case LEFT:
       opposite = RIGHT;
+      break;
     case RIGHT:
       opposite = LEFT;
+      break;
     default:
       opposite = NEUTRAL;
+      break;
   }
 
   // same direction -> +1, opposite direction -> -1
   // other directions -> 0, rocks -> 0.5
   return pieces.map((direction) => {
     switch (true) {
-      case (direction === pusher):
+      case (direction === pusherDirection):
         return 1;
       case (direction === opposite):
         return (-1);
       case (direction === NEUTRAL):
-        return 0.5;
+        return (-0.5);
       default:
         return 0;
     }
