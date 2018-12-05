@@ -1,24 +1,11 @@
 /* eslint-disable */
-const gameboard = document.getElementById('gameboard');
+const GAMEBOARD = document.getElementById('GAMEBOARD');
 const EMPTY = 'empty';
-// Temp names
-const mountain = 'mtn3-neutral';
-const eleUp = 'gol0-up';
-const eleDown = 'gol0-down';
-const eleLeft = 'gol0-left';
-const eleRight = 'gol0-right';
-const eleNeutral = 'gol0-neutral';
-const rhinoUp = 'gol1-up';
-const rhinoDown = 'gol1-down';
-const rhinoLeft = 'gol1-left';
-const rhinoRight = 'gol1-right'; 
-const rhinoNeutral = 'gol1-neutral';
-const ELEPHANT = 0;
-const RHINO = 1;
+const MOUNTAIN = 'mtn3-neutral';
 const NOTHING = 0;
 const POOL = 'p';
-const ELE = 'gol0-';
-const RHI = 'gol1-';
+const ELE = 'gol0-'; // Will update when new images added
+const RHI = 'gol1-'; // Will update when new images added
 const UP = 'up';
 const DOWN = 'down';
 const LEFT = 'left';
@@ -26,23 +13,22 @@ const RIGHT = 'right';
 const NEUTRAL = 'neutral';
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded!');
-  // State of game
+  // Start of game state
   const state = {
     // board[y][x]
     board: [[EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
             [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-            [EMPTY, mountain, mountain, mountain, EMPTY],
+            [EMPTY, MOUNTAIN, MOUNTAIN, MOUNTAIN, EMPTY],
             [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
             [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY]],
     elephantPool: 5,
     rhinoPool: 5,
-    turn: ELEPHANT, // 0 -> elephant, 1 -> rhino
+    turn: 0, // 0 -> elephant, 1 -> rhino
     selected: NOTHING, // 0 -> nothing, [x,y] -> current selection
     targeted: NOTHING, // 0 -> nothing, [x,y] -> targeted coords
   };
-  drawBoard(gameboard, state);
-  gameboard.addEventListener('click', clickDelegation(state), false);
+  drawBoard(GAMEBOARD, state);
+  GAMEBOARD.addEventListener('click', clickDelegation(state), false);
 });
 
 
@@ -59,16 +45,15 @@ const clickDelegation = (state) => {
     let clickTarget = evt.target;
     // UPDATE!! will need to change depending on html formatting
     if (clickTarget.tagName === 'IMG') {
-      clickTarget = clickTarget.parentNode;  
+      clickTarget = clickTarget.parentNode;
     }
-    console.log(clickTarget);
-    
+
     // Remove listener while we have reference to handle
-    gameboard.removeEventListener('click', handle);
+    GAMEBOARD.removeEventListener('click', handle);
 
     // get x,y coords from element clicked
-    const x = Number.parseInt(clickTarget.id[1]);
-    const y = Number.parseInt(clickTarget.id[2]);
+    const x = Number.parseInt(clickTarget.id[1], 10);
+    const y = Number.parseInt(clickTarget.id[2], 10);
 
     // 1 -> rhino, 0 -> elephant
     const currentPool = (currentState.turn) ? currentState.rhinoPool
@@ -81,21 +66,22 @@ const clickDelegation = (state) => {
 
     // If nothing selected
     if (!currentState.selected) {
-
       // check if current player's piece or pool
-      if (inPool ||
-          (y < 5 && isYourPiece(currentState.turn, currentState.board[y][x]))) {
+      // FIND A BETTER WAY TO FORMAT
+      if (inPool
+        || (y < 5
+          && isYourPiece(currentState.turn, currentState.board[y][x]))) {
         currentState.selected = [x, y];
         highlight(clickTarget);
-        gameboard.addEventListener('click', clickDelegation(currentState));
+        GAMEBOARD.addEventListener('click', clickDelegation(currentState));
       } else {
-        gameboard.addEventListener('click', clickDelegation(state));
+        GAMEBOARD.addEventListener('click', clickDelegation(state));
       }
-    } 
+    }
     // If selected and targeted are both the Pool then try again!
     else if (currentState.selected[1] === 5
              && y === 5) {
-      gameboard.addEventListener('click', clickDelegation(state));
+      GAMEBOARD.addEventListener('click', clickDelegation(state));
     }
     // If already selected then do an action at targeted
     else {
@@ -111,16 +97,13 @@ const playerTurn = function (state) {
   const currentState = Object.assign({}, state);
 
   const selectedCoords = {
-    x : Number.parseInt(currentState.selected[0]),
-    y : Number.parseInt(currentState.selected[1]),
+    x: Number.parseInt(currentState.selected[0], 10),
+    y: Number.parseInt(currentState.selected[1], 10),
   };
   const targetedCoords = {
-    x : Number.parseInt(currentState.targeted[0]),
-    y : Number.parseInt(currentState.targeted[1]),
+    x: Number.parseInt(currentState.targeted[0], 10),
+    y: Number.parseInt(currentState.targeted[1], 10),
   };
-  console.log(currentState);
-  console.log(currentState.board);
-  console.log(currentState.board[0][0]);
 
   // set selected and targeted to Pool or square
   const selectedPiece = (selectedCoords.y === 5) ?
@@ -134,12 +117,12 @@ const playerTurn = function (state) {
 
   let futureState = 0;
 
-  //----------- ACTION! -----------//
- 
+  // ----------- ACTION! ----------- //
+
   console.log(currentState);
   if (selectedPiece === POOL) {
     if (targetLocation === EMPTY) {
-     futureState = moveToBoard(currentState); 
+     futureState = moveToBoard(currentState);
     } else {
       futureState = pushFromSide(currentState);
     }
@@ -148,7 +131,7 @@ const playerTurn = function (state) {
       case (targetLocation === POOL):
         futureState = removeFromBoard(currentState);
         break;
-      case (targetLocation === mountain):
+      case (targetLocation === MOUNTAIN):
         futureState = initiatePush(currentState);
         break;
         // dx <= 1 and dy == 0  or  dx == 0 and dy <= 1 ORTHOGONAL ONLY
@@ -168,21 +151,20 @@ const playerTurn = function (state) {
     }
   }
 
-
   futureState.then((nextState) => {
     console.log('Valid Move');
-    drawBoard(gameboard, nextState);
+    drawBoard(GAMEBOARD, nextState);
     // Toggle between 0 and 1 for turn: +(to number) !!(to bool) !(not)
     nextState.turn = +!!!nextState.turn;
     removeHighlight(getSelectedSquare(nextState.selected));
     removeArrows(getSelectedSquare(nextState.targeted));
     removeSelected(nextState);
-    gameboard.addEventListener('click', clickDelegation(nextState));
+    GAMEBOARD.addEventListener('click', clickDelegation(nextState));
   }).catch((reason) => {
     console.log(reason);
     currentState.targeted = 0;
-    drawBoard(gameboard, currentState);
-    gameboard.addEventListener('click', clickDelegation(currentState));
+    drawBoard(GAMEBOARD, currentState);
+    GAMEBOARD.addEventListener('click', clickDelegation(currentState));
   });
 };
 
@@ -199,7 +181,7 @@ const moveToBoard = function (state) {
       const piece = moveToBoardPiece(currentState);
       currentState.board[y][x] = piece;
       currentState[currentPool] -= 1;
-      drawBoard(gameboard, currentState);
+      drawBoard(GAMEBOARD, currentState);
 
       const rotateHandler = () => {
 
@@ -261,7 +243,7 @@ const movePiece = function (state) {
       const piece = currentState.board[ys][xs].slice(0,5) + NEUTRAL;
       currentState.board[yt][xt] = piece;
       currentState.board[ys][xs] = EMPTY;
-      drawBoard(gameboard, currentState);
+      drawBoard(GAMEBOARD, currentState);
 
       const rotateHandler = () => {
 
@@ -270,8 +252,6 @@ const movePiece = function (state) {
         futureState.then((nextState) => {
           resolve(nextState);
         }).catch((reason) => {
-          // UPDATE after done testing
-          console.log(reason);
           removeArrows(getSelectedSquare(currentState.targeted));
           rotateHandler();
         });
@@ -294,7 +274,7 @@ const rotate = function (state) {
       const nextState = Object.assign({}, currentState);
       const handle = (evt) => {
         // remove listener while handle is in scope
-        gameboard.removeEventListener('click', handle);
+        GAMEBOARD.removeEventListener('click', handle);
         // Get current target and slice last half to get direction
         const curTarget = nextState.targeted;
         const currentDirection = nextState.board[curTarget[1]][curTarget[0]].slice(5);
@@ -339,7 +319,7 @@ const rotate = function (state) {
       };
       return handle;
     };
-    gameboard.addEventListener('click', clickArrow(currentState));
+    GAMEBOARD.addEventListener('click', clickArrow(currentState));
   });
 };
 
@@ -352,19 +332,9 @@ const initiatePush = function (state) {
       const pusher = currentState.board[currentState.selected[1]][currentState.selected[0]];
 
       const rowInFront = getRowInFront(currentState);
-      console.log('rowInFront:');
-      console.log(rowInFront);
       
-      // [map] check directions of pieces
       const pushedRow = rowInFront.map((pieceName) => pieceName.slice(5));
-
-      // [map] assign push strength values 
-      // [reduce] sum
-      
-      console.log('pushedRow:')
-      console.log(pushedRow);
       const pushAmount = 1 + assignPushStrength(pushedRow, pusher).reduce((a,b) => a + b);
-      console.log(`pushAmount: ${pushAmount}`);
 
       // Get x,y coords of pushed elements
       const coordsOfRow = getCoordsInFront(currentState);
@@ -376,23 +346,18 @@ const initiatePush = function (state) {
         reject('Not strong enough');
       }
 
-      
-
-
     } else {
       reject('Can\'t push');
     }
   });
 };
 
-// NOT READY
+// NEEDS TO CHECK FOR PUSHING OFF BOARD
+// UPDATE ME!
 // pushRow :: ([[x,y]], state) -> state
 const pushRow = function (coords, state) {
-  console.log('PUSHING!');
-  console.log(coords);
-  console.log(state);
-
   const currentState = Object.assign({}, state);
+  // reverse the list so they can be moved without overwriting 
   const moving = coords.reverse();
 
   const direction = currentState.board[currentState.selected[1]][currentState.selected[0]].slice(5);
@@ -423,17 +388,15 @@ const pushRow = function (coords, state) {
     default:
   }
 
+  // Move the pieces in front
   moving.forEach((coord) => {
     currentState.board[coord[1] + deltaY][coord[0] + deltaX] = 
     currentState.board[coord[1]][coord[0]];
   });
 
+  // Move the pusher
   currentState.board[currentState.selected[1] + deltaY][currentState.selected[0] + deltaX] = currentState.board[currentState.selected[1]][currentState.selected[0]];
   currentState.board[currentState.selected[1]][currentState.selected[0]] = EMPTY;
-
-
-
-
 
   return state;
 };
@@ -446,6 +409,7 @@ const pushRow = function (coords, state) {
 
 // drawBoard :: (elem, state) -> void
 const drawBoard = function (view, model) {
+  // UPDATE this could be made to check if the same before updating
   model.board.forEach((row, y) => {
     row.forEach((space, x) => {
       if (model.board[y][x] === EMPTY) {
@@ -461,7 +425,6 @@ const drawBoard = function (view, model) {
 
 // isYourPiece :: (Either[ELEPHANT | RHINO], Any) -> Bool
 const isYourPiece = function (currentPlayer, piece) {
-  console.log(`piece: ${piece}`);
   return (piece.toString().indexOf(currentPlayer) >= 0);
 };
 
@@ -585,6 +548,7 @@ const getRowInFront = function (state) {
   const yp = state.selected[1];
   let pushedRow = [];
 
+  //This is gross and needs to be made more declarative
   switch (direction) {
     case UP:
       state.board.forEach((row, yb) => {
@@ -635,10 +599,8 @@ const getCoordsInFront = function (state) {
   const yp = state.selected[1];
   let pushedRow = [];
 
-  console.log('In getCoordsInFront')
-  console.log(`${direction}, ${xp},${yp}, ${pusher}`);
-
   // This is nonsense and needs cleaned up!
+  // It can probably be implemented with functional/declarative
   switch (direction) {
     case UP:
       state.board.forEach((row, yb) => {
@@ -701,12 +663,9 @@ const getCoordsInFront = function (state) {
       return;
   }
 
-  // console.log(`coords ${pushedRow}`);
-
   if (pushedRow.includes(EMPTY)) {
     pushedRow = pushedRow.slice(0, pushedRow.indexOf(EMPTY));
   }
-  // console.log(`returning ${pushedRow}`)
   return pushedRow;
 };
 
@@ -734,7 +693,7 @@ const assignPushStrength = function (pieces, pusher) {
   }
 
   // same direction -> +1, opposite direction -> -1
-  // other directions -> 0, rocks -> 0.5
+  // other directions -> 0, rocks -> -0.5
   return pieces.map((direction) => {
     switch (true) {
       case (direction === pusherDirection):
@@ -751,6 +710,5 @@ const assignPushStrength = function (pieces, pusher) {
 
 // delta :: (+/-)INT -> (+/-)INT -> (+)INT
 const delta = function (num1, num2){
-  
   return (num1 > num2)? num1-num2 : num2-num1;
 };
