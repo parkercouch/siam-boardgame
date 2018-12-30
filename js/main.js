@@ -393,11 +393,15 @@ const pushRow = function (coords, state) {
 
   // Move the pieces in front
   moving.forEach((coord) => {
-    if (isOnBorder(coord[0], coord[1])){
+    console.log(coord);
+    if (isOnBorder(coord)){
       // pushOffBoard
+      console.log("pushing off board");
+      pushOffBoard(coord, currentState);
+    } else {
+      currentState.board[coord[1] + deltaY][coord[0] + deltaX] = 
+      currentState.board[coord[1]][coord[0]];
     }
-    currentState.board[coord[1] + deltaY][coord[0] + deltaX] = 
-    currentState.board[coord[1]][coord[0]];
   });
 
   // Move the pusher
@@ -415,20 +419,16 @@ const pushOffBoard = function (coords, state) {
   // If rock then check who won
   if (piece === MOUNTAIN) {
     //checkWinner();
+    console.log('Check for winner');
     return;
   }
 
   // If elephants piece
   if (isYourPiece(0, piece)) {
-
+    state.elephantPool += 1;
   } else {
-
+    state.rhinoPool += 1;
   }
-
-
-
-
-  return;
 };
 
 
