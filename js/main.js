@@ -1,5 +1,5 @@
 /* eslint-disable */
-const GAMEBOARD = document.getElementById('GAMEBOARD');
+const GAMEBOARD = document.getElementById('gameboard');
 const EMPTY = 'empty';
 const MOUNTAIN = 'mtn3-neutral';
 const NOTHING = 0;
@@ -388,8 +388,14 @@ const pushRow = function (coords, state) {
     default:
   }
 
+  //CHECK FOR PUSHING OFF BOARD
+
+
   // Move the pieces in front
   moving.forEach((coord) => {
+    if (isOnBorder(coord[0], coord[1])){
+      // pushOffBoard
+    }
     currentState.board[coord[1] + deltaY][coord[0] + deltaX] = 
     currentState.board[coord[1]][coord[0]];
   });
@@ -398,7 +404,31 @@ const pushRow = function (coords, state) {
   currentState.board[currentState.selected[1] + deltaY][currentState.selected[0] + deltaX] = currentState.board[currentState.selected[1]][currentState.selected[0]];
   currentState.board[currentState.selected[1]][currentState.selected[0]] = EMPTY;
 
-  return state;
+  return currentState;
+};
+
+// pushOffBoard :: [x,y] state -> void
+// What do I need? Just state and coords?
+const pushOffBoard = function (coords, state) {
+  const piece = state.board[coords[1]][coords[0]];
+  // If a piece then return to pool
+  // If rock then check who won
+  if (piece === MOUNTAIN) {
+    //checkWinner();
+    return;
+  }
+
+  // If elephants piece
+  if (isYourPiece(0, piece)) {
+
+  } else {
+
+  }
+
+
+
+
+  return;
 };
 
 
