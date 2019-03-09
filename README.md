@@ -26,15 +26,8 @@ A player may do 1 of 5 possible actions
 The player that has their animal closest to a mountain when it is pushed off the board wins
 (The animal must be facing in the pushing direction)
 
-#### Detailed rules
-I will update this section later!
-
-
-## Other
 
 ### TODO:
-Everything
-
-
-### BUGS:
-No code so no bugs. Yay?
+* Add win condition
+* Style
+* Refactor messy nested logic
